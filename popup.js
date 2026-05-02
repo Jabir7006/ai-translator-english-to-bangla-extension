@@ -36,7 +36,8 @@ document.getElementById("translateBtn").addEventListener("click", () => {
                     const bg = response.provider === "gemini"
                         ? "rgba(137,180,250,0.12)"
                         : "rgba(166,227,161,0.12)";
-                    html += `<br><span style="display:inline-block;margin-top:8px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:${color};background:${bg};border:1px solid ${color}33;">${icon} ${label}</span>`;
+                    const modelText = response.model ? ` • ${response.model}` : "";
+                    html += `<br><span style="display:inline-block;margin-top:8px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;color:${color};background:${bg};border:1px solid ${color}33;">${icon} ${label}${modelText}</span>`;
                 }
 
                 resultDiv.innerHTML = html;

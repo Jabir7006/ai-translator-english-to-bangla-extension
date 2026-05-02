@@ -45,6 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 opt.classList.remove('active');
             }
         });
+
+        // Hide/show the respective key sections
+        if (provider === 'gemini') {
+            document.getElementById('geminiSection').classList.remove('hidden');
+            document.getElementById('groqSection').classList.add('hidden');
+        } else {
+            document.getElementById('groqSection').classList.remove('hidden');
+            document.getElementById('geminiSection').classList.add('hidden');
+        }
     }
 
     // ── Save settings ──
