@@ -47,3 +47,6 @@ document.getElementById("translateBtn").addEventListener("click", () => {
         }
     );
 });
+
+// Auto-focus the input box when the popup opens
+document.getElementById("inputText").focus();
