@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "AI Text Translator",
+  "version": "1.5",
+  "permissions": [],
+  "host_permissions": ["*://api.groq.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
