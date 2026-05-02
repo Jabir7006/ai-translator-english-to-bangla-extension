@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Translator Settings</title>
+    <style>
+        body {
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #313244;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 380px;
+            border: 1px solid #45475a;
+        }
+        h2 {
+            color: #cba6f7;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        p {
+            font-size: 14px;
+            color: #bac2de;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        a {
+            color: #89b4fa;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #585b70;
+            border-radius: 8px;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #cba6f7;
+        }
+        button {
+            background-color: #cba6f7;
+            color: #11111b;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #b4befe;
+        }
+        #status {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #a6e3a1;
+            text-align: center;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Settings</h2>
+        <p>Enter your <a href="https://console.groq.com/keys" target="_blank">Groq API Key</a> to power the translations. Your key is stored securely in your browser.</p>
+        
+        <label for="apiKey">API Key:</label>
+        <input type="password" id="apiKey" placeholder="gsk_..." spellcheck="false">
+        
+        <button id="saveBtn">Save Key</button>
+        <div id="status"></div>
+    </div>
+    
+    <script src="options.js"></script>
+</body>
+</html>

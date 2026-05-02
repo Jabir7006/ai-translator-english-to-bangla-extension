@@ -1,6 +1,3 @@
-// আপনার Groq API Key এখানে বসান
-const GROQ_API_KEY = "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"; // আপনার আসল কি বসাবেন
-
 const SYSTEM_PROMPT = `You are an expert Bengali translator specializing in natural, everyday Bangladeshi colloquial Bengali (চলিত ভাষা).
 
 Your task is to translate ONLY the [Target Text] into natural Bengali,
@@ -107,82 +104,88 @@ not translated word-by-word.
 <b>সহজভাবে বললে:</b> [Short explanation only if needed] 👍`;
 
 async function fetchTranslation(text, context) {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
+  try {
+    // Fetch the key from Chrome storage
+    const storageData = await chrome.storage.local.get(["groqApiKey"]);
+    const apiKey = storageData.groqApiKey;
 
-        const cleanText = (text || "").trim();
-        const cleanContext = (context || "").trim();
+    if (!apiKey) {
+      return "Error: API Key missing. Please set it in the extension options.";
+    }
 
-        const userMessage = `Context (for understanding only, do not translate):
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const cleanText = (text || "").trim();
+    const cleanContext = (context || "").trim();
+
+    const userMessage = `Context (for understanding only, do not translate):
 ${cleanContext || "No additional context"}
 
 Target Text (translate ONLY this):
 ${cleanText}`;
 
-        const response = await fetch(
-            "https://api.groq.com/openai/v1/chat/completions",
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${apiKey}`, // Using the dynamic key
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [
             {
-                method: "POST",
-                signal: controller.signal,
-                headers: {
-                    Authorization: `Bearer ${GROQ_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-                    messages: [
-                        {
-                            role: "system",
-                            content: SYSTEM_PROMPT
-                        },
-                        {
-                            role: "user",
-                            content: userMessage
-                        }
-                    ],
-                    temperature: 0.2,
-                    max_tokens: 400
-                })
-            }
-        );
+              role: "system",
+              content: SYSTEM_PROMPT,
+            },
+            {
+              role: "user",
+              content: userMessage,
+            },
+          ],
+          temperature: 0.2,
+          max_tokens: 400,
+        }),
+      },
+    );
 
-        clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            return `Error: ${
-                errorData.error?.message || "API Request Failed"
-            }`;
-        }
-
-        const data = await response.json();
-
-        return (
-            data?.choices?.[0]?.message?.content?.trim() ||
-            "Error: রেসপন্স ফাঁকা এসেছে।"
-        );
-    } catch (error) {
-        if (error.name === "AbortError") {
-            return "Error: API Timeout!";
-        }
-
-        return "Internal Error: " + error.message;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return `Error: ${errorData.error?.message || "API Request Failed"}`;
     }
+
+    const data = await response.json();
+
+    return (
+      data?.choices?.[0]?.message?.content?.trim() ||
+      "Error: রেসপন্স ফাঁকা এসেছে।"
+    );
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return "Error: API Timeout!";
+    }
+
+    return "Internal Error: " + error.message;
+  }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "translate") {
-        fetchTranslation(request.text, request.context)
-            .then((result) => {
-                sendResponse({ result });
-            })
-            .catch((err) => {
-                sendResponse({
-                    result: "Critical Error: " + err.message
-                });
-            });
+  if (request.action === "translate") {
+    fetchTranslation(request.text, request.context)
+      .then((result) => {
+        sendResponse({ result });
+      })
+      .catch((err) => {
+        sendResponse({
+          result: "Critical Error: " + err.message,
+        });
+      });
 
-        return true;
-    }
+    return true;
+  }
 });
