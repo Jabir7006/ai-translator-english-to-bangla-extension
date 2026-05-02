@@ -249,7 +249,8 @@ if (!window.hasInjectedAI) {
                     if (response.provider) {
                         const icon = response.provider === "gemini" ? "✦" : "⚡";
                         const label = response.provider === "gemini" ? "Gemini" : "Groq";
-                        html += `<br><span class="provider-tag ${response.provider}">${icon} ${label}</span>`;
+                        const modelText = response.model ? ` • ${response.model}` : "";
+                        html += `<br><span class="provider-tag ${response.provider}">${icon} ${label}${modelText}</span>`;
                     }
 
                     toastContent.innerHTML = html;

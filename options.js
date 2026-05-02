@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const geminiKeyInput = document.getElementById('geminiKey');
     const groqKeyInput = document.getElementById('groqKey');
     const groqModelSelect = document.getElementById('groqModel');
+    const geminiModelSelect = document.getElementById('geminiModel');
     const saveBtn = document.getElementById('saveBtn');
     const statusDiv = document.getElementById('status');
     const providerOptions = document.querySelectorAll('.provider-option');
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeProvider = 'gemini';
 
     // ── Load saved settings ──
-    chrome.storage.local.get(['groqApiKey', 'geminiApiKey', 'activeProvider', 'groqModel'], (result) => {
+    chrome.storage.local.get(['groqApiKey', 'geminiApiKey', 'activeProvider', 'groqModel', 'geminiModel'], (result) => {
         if (result.groqApiKey) {
             groqKeyInput.value = result.groqApiKey;
         }
@@ -21,6 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (result.groqModel) {
             groqModelSelect.value = result.groqModel;
+        }
+        if (result.geminiModel) {
+            geminiModelSelect.value = result.geminiModel;
         }
         updateProviderUI(activeProvider);
     });
@@ -68,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
             groqApiKey: groqKey,
             geminiApiKey: geminiKey,
             activeProvider: activeProvider,
-            groqModel: groqModelSelect.value
+            groqModel: groqModelSelect.value,
+            geminiModel: geminiModelSelect.value
         }, () => {
             showStatus('Settings saved successfully! ✨', 'success');
         });

@@ -86,7 +86,7 @@ async function fetchWithGroq(userMessage, apiKey, model) {
     // Strip Qwen3's <think>...</think> reasoning block
     if (content) {
         content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-        
+
         // If the model rambles before giving the final answer, extract only the final format
         const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
         if (match) {
@@ -97,12 +97,14 @@ async function fetchWithGroq(userMessage, apiKey, model) {
     return content;
 }
 
-async function fetchWithGemini(userMessage, apiKey) {
+async function fetchWithGemini(userMessage, apiKey, model) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
+    const geminiModel = model || "gemini-2.5-flash-lite";
+
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
         {
             method: "POST",
             signal: controller.signal,
@@ -141,7 +143,7 @@ async function fetchWithGemini(userMessage, apiKey) {
     // Strip Qwen3's <think>...</think> reasoning block
     if (content) {
         content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
-        
+
         // If the model rambles before giving the final answer, extract only the final format
         const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
         if (match) {
@@ -160,13 +162,15 @@ async function fetchTranslation(text, context) {
             "groqApiKey",
             "geminiApiKey",
             "activeProvider",
-            "groqModel"
+            "groqModel",
+            "geminiModel"
         ]);
 
         const groqKey = storageData.groqApiKey;
         const geminiKey = storageData.geminiApiKey;
         const provider = storageData.activeProvider || "gemini";
         const groqModel = storageData.groqModel || "llama-3.3-70b-versatile";
+        const geminiModel = storageData.geminiModel || "gemini-2.5-flash-lite";
 
         console.log("[AI Translator] === New Translation ===");
         console.log("[AI Translator] Active provider:", provider);
@@ -186,17 +190,17 @@ ${cleanText}`;
         const providers = [];
 
         if (provider === "gemini") {
-            if (geminiKey) providers.push({ name: "gemini", fn: () => fetchWithGemini(userMessage, geminiKey) });
-            if (groqKey) providers.push({ name: "groq", fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
+            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel) });
+            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
         } else {
-            if (groqKey) providers.push({ name: "groq", fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
-            if (geminiKey) providers.push({ name: "gemini", fn: () => fetchWithGemini(userMessage, geminiKey) });
+            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
+            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel) });
         }
 
         console.log("[AI Translator] Provider order:", providers.map(p => p.name).join(" → "));
 
         if (providers.length === 0) {
-            return { result: "Error: কোনো API Key সেট করা হয়নি। Extension options এ গিয়ে API key দিন।", provider: null };
+            return { result: "Error: কোনো API Key সেট করা হয়নি। Extension options এ গিয়ে API key দিন।", provider: null, model: null };
         }
 
         // Try primary provider, fallback to secondary
@@ -206,7 +210,7 @@ ${cleanText}`;
                 const result = await providers[i].fn();
                 if (result) {
                     console.log(`[AI Translator] ✅ ${providers[i].name} succeeded`);
-                    return { result, provider: providers[i].name };
+                    return { result, provider: providers[i].name, model: providers[i].model };
                 }
                 console.log(`[AI Translator] ⚠️ ${providers[i].name} returned empty result`);
             } catch (err) {
@@ -221,27 +225,28 @@ ${cleanText}`;
             }
         }
 
-        return { result: "Error: রেসপন্স ফাঁকা এসেছে।", provider: null };
+        return { result: "Error: রেসপন্স ফাঁকা এসেছে।", provider: null, model: null };
 
     } catch (error) {
         if (error.name === "AbortError") {
-            return { result: "Error: API Timeout!", provider: null };
+            return { result: "Error: API Timeout!", provider: null, model: null };
         }
 
-        return { result: "Internal Error: " + error.message, provider: null };
+        return { result: "Internal Error: " + error.message, provider: null, model: null };
     }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "translate") {
         fetchTranslation(request.text, request.context)
-            .then(({ result, provider }) => {
-                sendResponse({ result, provider });
+            .then(({ result, provider, model }) => {
+                sendResponse({ result, provider, model });
             })
             .catch((err) => {
                 sendResponse({
                     result: "Critical Error: " + err.message,
-                    provider: null
+                    provider: null,
+                    model: null
                 });
             });
 
