@@ -2,6 +2,11 @@
   "manifest_version": 3,
   "name": "AI Text Translator",
   "version": "2.0",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": ["storage"],
   "options_page": "options.html",
   "host_permissions": [
@@ -19,6 +24,11 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Translate Text"
+    "default_title": "Translate Text",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   }
 }
