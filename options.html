@@ -12,45 +12,131 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
             background-color: #313244;
             padding: 32px;
-            border-radius: 12px;
+            border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            width: 380px;
+            width: 420px;
             border: 1px solid #45475a;
         }
         h2 {
             color: #cba6f7;
             margin-top: 0;
             margin-bottom: 8px;
+            font-size: 20px;
         }
-        p {
-            font-size: 14px;
-            color: #bac2de;
-            margin-bottom: 20px;
+        .subtitle {
+            font-size: 13px;
+            color: #a6adc8;
+            margin-bottom: 24px;
             line-height: 1.5;
         }
-        a {
-            color: #89b4fa;
-            text-decoration: none;
+
+        /* ── Provider Toggle ── */
+        .provider-section {
+            margin-bottom: 24px;
         }
-        a:hover {
-            text-decoration: underline;
+        .provider-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+            color: #cdd6f4;
+        }
+        .provider-toggle {
+            display: flex;
+            background: #1e1e2e;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 4px;
+            border: 1px solid #45475a;
+        }
+        .provider-option {
+            flex: 1;
+            text-align: center;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            color: #a6adc8;
+            user-select: none;
+        }
+        .provider-option:hover {
+            color: #cdd6f4;
+            background: rgba(203, 166, 247, 0.08);
+        }
+        .provider-option.active {
+            background: #cba6f7;
+            color: #11111b;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(203, 166, 247, 0.3);
+        }
+        .provider-option .provider-icon {
+            margin-right: 6px;
+        }
+        .provider-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+        .badge-recommended {
+            background: rgba(166, 227, 161, 0.15);
+            color: #a6e3a1;
+        }
+        .badge-fast {
+            background: rgba(137, 180, 250, 0.15);
+            color: #89b4fa;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            border: none;
+            border-top: 1px solid #45475a;
+            margin: 24px 0;
+        }
+
+        /* ── API Key Sections ── */
+        .key-section {
+            margin-bottom: 20px;
+        }
+        .key-section.hidden {
+            display: none;
+        }
+        .key-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
         }
         label {
             display: block;
-            margin-bottom: 8px;
             font-size: 14px;
             font-weight: 500;
+        }
+        .key-link {
+            font-size: 12px;
+            color: #89b4fa;
+            text-decoration: none;
+        }
+        .key-link:hover {
+            text-decoration: underline;
         }
         input[type="password"] {
             width: 100%;
             padding: 12px;
-            margin-bottom: 20px;
+            margin-top: 6px;
             border: 1px solid #585b70;
             border-radius: 8px;
             background-color: #1e1e2e;
@@ -58,47 +144,165 @@
             box-sizing: border-box;
             font-family: monospace;
             font-size: 14px;
+            transition: border-color 0.2s;
         }
         input[type="password"]:focus {
             outline: none;
             border-color: #cba6f7;
         }
+        .key-hint {
+            font-size: 11px;
+            color: #6c7086;
+            margin-top: 6px;
+        }
+
+        /* ── Select Dropdown ── */
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 6px;
+            border: 1px solid #585b70;
+            border-radius: 8px;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            box-sizing: border-box;
+            font-family: system-ui, sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236c7086' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        select:focus {
+            outline: none;
+            border-color: #cba6f7;
+        }
+        .model-tag {
+            display: inline-block;
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            margin-left: 4px;
+            vertical-align: middle;
+            font-weight: 600;
+        }
+        .tag-new {
+            background: rgba(203, 166, 247, 0.15);
+            color: #cba6f7;
+        }
+
+        /* ── Fallback Info ── */
+        .fallback-info {
+            background: rgba(249, 226, 175, 0.06);
+            border: 1px solid rgba(249, 226, 175, 0.15);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #f9e2af;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .fallback-info .info-icon {
+            margin-right: 4px;
+        }
+
+        /* ── Save Button ── */
         button {
             background-color: #cba6f7;
             color: #11111b;
             border: none;
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
             font-size: 15px;
             width: 100%;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
         }
         button:hover {
             background-color: #b4befe;
         }
+        button:active {
+            transform: scale(0.98);
+        }
         #status {
-            margin-top: 16px;
+            margin-top: 14px;
             font-size: 14px;
-            color: #a6e3a1;
             text-align: center;
             min-height: 20px;
+            transition: opacity 0.3s;
+        }
+        .status-success {
+            color: #a6e3a1;
+        }
+        .status-error {
+            color: #f38ba8;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Settings</h2>
-        <p>Enter your <a href="https://console.groq.com/keys" target="_blank">Groq API Key</a> to power the translations. Your key is stored securely in your browser.</p>
-        
-        <label for="apiKey">API Key:</label>
-        <input type="password" id="apiKey" placeholder="gsk_..." spellcheck="false">
-        
-        <button id="saveBtn">Save Key</button>
+        <h2>⚙️ Translator Settings</h2>
+        <p class="subtitle">Configure your translation provider and API keys.</p>
+
+        <!-- Provider Toggle -->
+        <div class="provider-section">
+            <span class="provider-label">Translation Provider</span>
+            <div class="provider-toggle">
+                <div class="provider-option active" data-provider="gemini">
+                    <span class="provider-icon">✦</span>Gemini
+                    <span class="provider-badge badge-recommended">ভালো</span>
+                </div>
+                <div class="provider-option" data-provider="groq">
+                    <span class="provider-icon">⚡</span>Groq
+                    <span class="provider-badge badge-fast">দ্রুত</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="fallback-info">
+            <span class="info-icon">💡</span>
+            যদি selected provider fail করে, automatically অন্যটা দিয়ে try করবে।
+        </div>
+
+        <hr class="divider">
+
+        <!-- Gemini Key -->
+        <div class="key-section" id="geminiSection">
+            <div class="key-header">
+                <label for="geminiKey">Gemini API Key</label>
+                <a class="key-link" href="https://aistudio.google.com/apikey" target="_blank">🔑 Get free key</a>
+            </div>
+            <input type="password" id="geminiKey" placeholder="AIzaSy..." spellcheck="false">
+            <div class="key-hint">Google AI Studio থেকে ফ্রি key নিন — কোনো card লাগবে না</div>
+        </div>
+
+        <!-- Groq Key -->
+        <div class="key-section" id="groqSection">
+            <div class="key-header">
+                <label for="groqKey">Groq API Key</label>
+                <a class="key-link" href="https://console.groq.com/keys" target="_blank">🔑 Get free key</a>
+            </div>
+            <input type="password" id="groqKey" placeholder="gsk_..." spellcheck="false">
+            <div class="key-hint">Groq Console থেকে ফ্রি key নিন</div>
+
+            <label for="groqModel" style="margin-top: 14px;">Groq Model</label>
+            <select id="groqModel">
+                <option value="llama-3.3-70b-versatile">Llama 3.3 70B (default)</option>
+                <option value="qwen/qwen3-32b">Qwen3 32B — try this! 🔥</option>
+                <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout 17B</option>
+                <option value="openai/gpt-oss-120b">GPT-OSS 120B (OpenAI)</option>
+                <option value="llama-3.1-8b-instant">Llama 3.1 8B (fastest)</option>
+            </select>
+            <div class="key-hint">ভালো বাংলার জন্য Qwen3 32B বা GPT-OSS 120B try করো</div>
+        </div>
+
+        <button id="saveBtn">Save Settings</button>
         <div id="status"></div>
     </div>
-    
+
     <script src="options.js"></script>
 </body>
 </html>

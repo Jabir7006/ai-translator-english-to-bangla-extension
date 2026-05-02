@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "AI Text Translator",
-  "version": "1.6",
+  "version": "2.0",
   "permissions": ["storage"],
   "options_page": "options.html",
-  "host_permissions": ["*://api.groq.com/*"],
+  "host_permissions": [
+    "*://api.groq.com/*",
+    "*://generativelanguage.googleapis.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },

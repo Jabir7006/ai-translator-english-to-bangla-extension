@@ -73,6 +73,26 @@ if (!window.hasInjectedAI) {
         .toast-content {
             margin-top: 5px;
         }
+
+        .provider-tag {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .provider-tag.gemini {
+            background: rgba(137, 180, 250, 0.12);
+            color: #89b4fa;
+            border: 1px solid rgba(137, 180, 250, 0.25);
+        }
+        .provider-tag.groq {
+            background: rgba(166, 227, 161, 0.12);
+            color: #a6e3a1;
+            border: 1px solid rgba(166, 227, 161, 0.25);
+        }
     `;
     shadow.appendChild(style);
 
@@ -221,10 +241,18 @@ if (!window.hasInjectedAI) {
                 }
 
                 if (response?.result) {
-                    toastContent.innerHTML = response.result.replace(
+                    let html = response.result.replace(
                         /\n/g,
                         "<br>"
                     );
+
+                    if (response.provider) {
+                        const icon = response.provider === "gemini" ? "✦" : "⚡";
+                        const label = response.provider === "gemini" ? "Gemini" : "Groq";
+                        html += `<br><span class="provider-tag ${response.provider}">${icon} ${label}</span>`;
+                    }
+
+                    toastContent.innerHTML = html;
                 } else {
                     toastContent.innerHTML =
                         "সার্ভার থেকে কোনো রেজাল্ট আসেনি।";

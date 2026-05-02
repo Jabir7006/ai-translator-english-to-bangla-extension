@@ -1,27 +1,86 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const apiKeyInput = document.getElementById('apiKey');
+    const geminiKeyInput = document.getElementById('geminiKey');
+    const groqKeyInput = document.getElementById('groqKey');
+    const groqModelSelect = document.getElementById('groqModel');
     const saveBtn = document.getElementById('saveBtn');
     const statusDiv = document.getElementById('status');
+    const providerOptions = document.querySelectorAll('.provider-option');
 
-    // 1. Load the existing key when the page opens
-    chrome.storage.local.get(['groqApiKey'], (result) => {
+    let activeProvider = 'gemini';
+
+    // ── Load saved settings ──
+    chrome.storage.local.get(['groqApiKey', 'geminiApiKey', 'activeProvider', 'groqModel'], (result) => {
         if (result.groqApiKey) {
-            apiKeyInput.value = result.groqApiKey;
+            groqKeyInput.value = result.groqApiKey;
         }
+        if (result.geminiApiKey) {
+            geminiKeyInput.value = result.geminiApiKey;
+        }
+        if (result.activeProvider) {
+            activeProvider = result.activeProvider;
+        }
+        if (result.groqModel) {
+            groqModelSelect.value = result.groqModel;
+        }
+        updateProviderUI(activeProvider);
     });
 
-    // 2. Save the key when the button is clicked
-    saveBtn.addEventListener('click', () => {
-        const key = apiKeyInput.value.trim();
-        
-        chrome.storage.local.set({ groqApiKey: key }, () => {
-            // Show a success message
-            statusDiv.textContent = 'API Key saved successfully! ✨';
-            
-            // Clear the message after 3 seconds
-            setTimeout(() => {
-                statusDiv.textContent = '';
-            }, 3000);
+    // ── Provider toggle click ──
+    providerOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            activeProvider = option.dataset.provider;
+            updateProviderUI(activeProvider);
         });
     });
+
+    function updateProviderUI(provider) {
+        providerOptions.forEach(opt => {
+            if (opt.dataset.provider === provider) {
+                opt.classList.add('active');
+            } else {
+                opt.classList.remove('active');
+            }
+        });
+    }
+
+    // ── Save settings ──
+    saveBtn.addEventListener('click', () => {
+        const geminiKey = geminiKeyInput.value.trim();
+        const groqKey = groqKeyInput.value.trim();
+
+        // Validation
+        if (!geminiKey && !groqKey) {
+            showStatus('অন্তত একটা API key দিতে হবে!', 'error');
+            return;
+        }
+
+        if (activeProvider === 'gemini' && !geminiKey) {
+            showStatus('Gemini সিলেক্ট করেছ কিন্তু Gemini key দাওনি!', 'error');
+            return;
+        }
+
+        if (activeProvider === 'groq' && !groqKey) {
+            showStatus('Groq সিলেক্ট করেছ কিন্তু Groq key দাওনি!', 'error');
+            return;
+        }
+
+        chrome.storage.local.set({
+            groqApiKey: groqKey,
+            geminiApiKey: geminiKey,
+            activeProvider: activeProvider,
+            groqModel: groqModelSelect.value
+        }, () => {
+            showStatus('Settings saved successfully! ✨', 'success');
+        });
+    });
+
+    function showStatus(message, type) {
+        statusDiv.textContent = message;
+        statusDiv.className = type === 'error' ? 'status-error' : 'status-success';
+
+        setTimeout(() => {
+            statusDiv.textContent = '';
+            statusDiv.className = '';
+        }, 3500);
+    }
 });

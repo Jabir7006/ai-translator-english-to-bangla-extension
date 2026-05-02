@@ -1,191 +1,250 @@
-const SYSTEM_PROMPT = `You are an expert Bengali translator specializing in natural, everyday Bangladeshi colloquial Bengali (চলিত ভাষা).
+const SYSTEM_PROMPT = `You are a friendly Bangladeshi local explaining English text to a friend who is weak in English.
+Your ONLY job is to help them understand the true MEANING of the [Target Text] in the absolute easiest, most casual Bangladeshi conversational Bangla (চলিত ভাষা).
 
-Your task is to translate ONLY the [Target Text] into natural Bengali,
-while preserving how it would naturally be said in real life
-(conversation, title, meme, sarcasm, headline, etc.)
-—not literal word-by-word translation.
+DO NOT TRANSLATE LITERALLY. EXPLAIN THE MEANING.
 
 IMPORTANT RULES:
 
-1. USE CONTEXT FOR UNDERSTANDING ONLY
-Read the [Context] only to understand meaning, tone, sarcasm, slang, and intent.
-NEVER translate the context.
+1. NO FORMAL OR BOOKISH BANGLA
+NEVER use words like: "উন্মোচন", "দৃষ্টত", "অতএব", "ঋতুভিত্তিক", "প্রদর্শন", "অনুভব", "মেলাতে পারবেন", "গঠন করুন", "নির্ধারিত".
+Use words like: "বলে দিব", "দেখাবো", "সিজনাল", "মনে হচ্ছে", "মিলানো", "বানাও", "পারফেক্ট".
 
-2. TRANSLATE TARGET TEXT ONLY
-Only translate the exact selected text from [Target Text].
-Do not translate nearby text, replies, parent comments, or surrounding content.
+2. MEANING FIRST, WORDS SECOND
+Read the English, understand what it's trying to say, and say it how a normal Bangladeshi young person would say it in real life.
+Example 1:
+Target: "Can You Match These Dishes to the Jobs They Were Named After?"
+Bad: "এই খাবারগুলোকে তাদের নামের পেশার সাথে মেলাতে পারবেন?" (Too formal)
+Good: "কিছু খাবারের নাম বিভিন্ন পেশার মানুষের নামে রাখা হয়েছে, তুমি কি মেলাতে পারবে কোন খাবারটা কোন পেশার?"
 
-3. PRESERVE ORIGINAL TONE
-Keep the same tone:
-casual, rude, sarcastic, funny, romantic, formal, angry, etc.
-Do not soften rude text.
-Do not make formal text too casual.
+Example 2:
+Target: "Form Your Animal Squad and We'll Tell You Which Season You Were Meant for"
+Bad: "আপনার প্রাণী দল গঠন করুন এবং আমরা আপনাকে জানাব আপনি কোন মৌসুমের জন্য নির্ধারিত ছিলেন"
+Good: "তোমার পছন্দের অ্যানিমেল বা প্রাণীদের নিয়ে একটা স্কোয়াড বানাও, আর আমরা বলে দিব কোন সিজন বা ঋতু তোমার জন্য সবচেয়ে পারফেক্ট!"
 
-4. NATURAL BANGLA ONLY
-Use normal spoken Bangladeshi Bengali.
-Avoid robotic, literal, or awkward translations.
+Example 3: 
+Target: "Spend $20K on an International Trip and We'll Reveal Your Seasonal Aura"
+Bad: "একটা আন্তর্জাতিক ট্রিপে ২০ হাজার ডলার খরচ করুন এবং আমরা আপনার ঋতুভিত্তিক আউরা উন্মোচন করব"
+Good: "একটা ইন্টারন্যাশনাল ট্রিপে ২০ হাজার ডলার খরচ করো, আর আমরা বলে দিব তোমার সিজনাল আউরা বা ভাইব কেমন!"
 
-Examples:
-man → ভাই / দোস্ত / আরে
-dude → দোস্ত
-bro → ভাই
-come on → আরে ধুর / আরে ভাই
-geez → আরে বাবা / ধুর / উফ
+3. ENGLISH SLANG REMAINS ENGLISH
+Do not translate internet words. Keep them transliterated:
+Aura -> আউরা বা ভাইব
+Vibe -> ভাইব
+Squad -> স্কোয়াড বা টিম
+Meant for -> তোমার জন্য কোনটা পারফেক্ট / তোমার সাথে কোনটা যায়
+Trip -> ট্রিপ বা ট্যুর
 
-Never translate like:
-মান, ডুড, ব্রো, দৃশ্যত, অতএব
+4. NO CHAIN OF THOUGHT
+DO NOT output your internal thinking. DO NOT write <think> tags. DO NOT say "Here is the explanation". Just output the format below.
 
-5. DO NOT FORCE “ভাই”
-Only use ভাই / দোস্ত if it naturally fits the original tone.
-Do NOT insert ভাই unnecessarily.
+5. EXACT OUTPUT FORMAT
+(You must output exactly this and nothing else)
 
-Bad:
-“How are you?” → তুমি কেমন আছো ভাই
+<b>অর্থ:</b> [The absolute easiest, most casual everyday Bangla meaning of the text. Do not translate word-by-word. Explain what it means naturally.]
 
-Good:
-“How are you?” → তুমি কেমন আছো?
+<b>সহজ কথায়:</b> [One single line explaining the main point very simply. Example: "এখানে বলা হয়েছে যে..."] 👍`;
 
-6. KEEP LENGTH NATURAL
-If original text is short, keep translation short.
+// ─── Provider Functions ──────────────────────────────────────────────
 
-7. SIMPLE EXPLANATION
-Only explain if needed.
-Do not invent extra meaning.
-
-8. EXACT OUTPUT FORMAT
-
-9. HANDLE SPOKEN ENGLISH NATURALLY
-
-Many internet comments omit commas and punctuation.
-
-Example:
-"you don't man" should be understood as "you don't, man"
-
-Interpret spoken English naturally before translating.
-Do not translate broken punctuation literally.
-
-10. HANDLE TITLES AND HEADLINES NATURALLY
-
-If the text is a title, headline, quiz title, YouTube title, article title, or thumbnail text,
-translate it like a natural Bengali title — not like a literal sentence.
-
-Examples:
-
-"This Travel Quiz Is Scientifically Designed to Determine the Time Period You Belong in"
-
-→ "এই ট্রাভেল কুইজটা বৈজ্ঞানিকভাবে তৈরি — তুমি কোন যুগের মানুষ, সেটা জানার জন্য"
-
-Do not use awkward literal translations like:
-"সময়কালে তুমি উপযুক্ত"
-
-Prefer natural expressions like:
-"কোন যুগের মানুষ"
-"কোন সময়ের মানুষ"
-"আসলে তুমি কোথায় মানাও"
-
-11. HANDLE BROKEN OR INFORMAL ENGLISH
-
-Many internet comments are grammatically broken, incomplete, or messy.
-
-Understand the intended meaning first,
-then translate naturally.
-
-Do NOT translate broken grammar literally.
-
-Example:
-"if you're using nvidia gpu apparently it's intel"
-
-should be understood by meaning,
-not translated word-by-word.
-
-
-<b>অর্থ:</b> [Natural Bengali translation]
-
-<b>সহজভাবে বললে:</b> [Short explanation only if needed] 👍`;
-
-async function fetchTranslation(text, context) {
-  try {
-    // Fetch the key from Chrome storage
-    const storageData = await chrome.storage.local.get(["groqApiKey"]);
-    const apiKey = storageData.groqApiKey;
-
-    if (!apiKey) {
-      return "Error: API Key missing. Please set it in the extension options.";
-    }
-
+async function fetchWithGroq(userMessage, apiKey, model) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const cleanText = (text || "").trim();
-    const cleanContext = (context || "").trim();
-
-    const userMessage = `Context (for understanding only, do not translate):
-${cleanContext || "No additional context"}
-
-Target Text (translate ONLY this):
-${cleanText}`;
+    const groqModel = model || "llama-3.3-70b-versatile";
 
     const response = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          Authorization: `Bearer ${apiKey}`, // Using the dynamic key
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "system",
-              content: SYSTEM_PROMPT,
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
             },
-            {
-              role: "user",
-              content: userMessage,
-            },
-          ],
-          temperature: 0.2,
-          max_tokens: 400,
-        }),
-      },
+            body: JSON.stringify({
+                model: groqModel,
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: userMessage }
+                ],
+                temperature: 0.2,
+                max_tokens: 2048
+            })
+        }
     );
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return `Error: ${errorData.error?.message || "API Request Failed"}`;
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Groq API error (${response.status})`);
     }
 
     const data = await response.json();
+    let content = data?.choices?.[0]?.message?.content?.trim() || null;
 
-    return (
-      data?.choices?.[0]?.message?.content?.trim() ||
-      "Error: রেসপন্স ফাঁকা এসেছে।"
-    );
-  } catch (error) {
-    if (error.name === "AbortError") {
-      return "Error: API Timeout!";
+    // Strip Qwen3's <think>...</think> reasoning block
+    if (content) {
+        content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+        
+        // If the model rambles before giving the final answer, extract only the final format
+        const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
+        if (match) {
+            content = match[1].trim();
+        }
     }
 
-    return "Internal Error: " + error.message;
-  }
+    return content;
+}
+
+async function fetchWithGemini(userMessage, apiKey) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                system_instruction: {
+                    parts: [{ text: SYSTEM_PROMPT }]
+                },
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: userMessage }]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.2,
+                    maxOutputTokens: 800
+                }
+            })
+        }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const msg = errorData.error?.message || `Gemini API error (${response.status})`;
+        throw new Error(msg);
+    }
+
+    const data = await response.json();
+    let content = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+
+    // Strip Qwen3's <think>...</think> reasoning block
+    if (content) {
+        content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+        
+        // If the model rambles before giving the final answer, extract only the final format
+        const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
+        if (match) {
+            content = match[1].trim();
+        }
+    }
+
+    return content;
+}
+
+// ─── Main Translation Logic ─────────────────────────────────────────
+
+async function fetchTranslation(text, context) {
+    try {
+        const storageData = await chrome.storage.local.get([
+            "groqApiKey",
+            "geminiApiKey",
+            "activeProvider",
+            "groqModel"
+        ]);
+
+        const groqKey = storageData.groqApiKey;
+        const geminiKey = storageData.geminiApiKey;
+        const provider = storageData.activeProvider || "gemini";
+        const groqModel = storageData.groqModel || "llama-3.3-70b-versatile";
+
+        console.log("[AI Translator] === New Translation ===");
+        console.log("[AI Translator] Active provider:", provider);
+        console.log("[AI Translator] Gemini key exists:", !!geminiKey);
+        console.log("[AI Translator] Groq key exists:", !!groqKey);
+
+        const cleanText = (text || "").trim();
+        const cleanContext = (context || "").trim();
+
+        const userMessage = `Context (for understanding only, do not translate):
+${cleanContext || "No additional context"}
+
+Target Text (translate ONLY this):
+${cleanText}`;
+
+        // Determine provider order: selected first, then fallback
+        const providers = [];
+
+        if (provider === "gemini") {
+            if (geminiKey) providers.push({ name: "gemini", fn: () => fetchWithGemini(userMessage, geminiKey) });
+            if (groqKey) providers.push({ name: "groq", fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
+        } else {
+            if (groqKey) providers.push({ name: "groq", fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
+            if (geminiKey) providers.push({ name: "gemini", fn: () => fetchWithGemini(userMessage, geminiKey) });
+        }
+
+        console.log("[AI Translator] Provider order:", providers.map(p => p.name).join(" → "));
+
+        if (providers.length === 0) {
+            return { result: "Error: কোনো API Key সেট করা হয়নি। Extension options এ গিয়ে API key দিন।", provider: null };
+        }
+
+        // Try primary provider, fallback to secondary
+        for (let i = 0; i < providers.length; i++) {
+            try {
+                console.log(`[AI Translator] Trying ${providers[i].name}...`);
+                const result = await providers[i].fn();
+                if (result) {
+                    console.log(`[AI Translator] ✅ ${providers[i].name} succeeded`);
+                    return { result, provider: providers[i].name };
+                }
+                console.log(`[AI Translator] ⚠️ ${providers[i].name} returned empty result`);
+            } catch (err) {
+                console.error(`[AI Translator] ❌ ${providers[i].name} failed:`, err.message);
+
+                // If this was the last provider, return the error
+                if (i === providers.length - 1) {
+                    return { result: `Error: ${err.message}`, provider: null };
+                }
+                console.log(`[AI Translator] Falling back to next provider...`);
+                // Otherwise continue to fallback
+            }
+        }
+
+        return { result: "Error: রেসপন্স ফাঁকা এসেছে।", provider: null };
+
+    } catch (error) {
+        if (error.name === "AbortError") {
+            return { result: "Error: API Timeout!", provider: null };
+        }
+
+        return { result: "Internal Error: " + error.message, provider: null };
+    }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "translate") {
-    fetchTranslation(request.text, request.context)
-      .then((result) => {
-        sendResponse({ result });
-      })
-      .catch((err) => {
-        sendResponse({
-          result: "Critical Error: " + err.message,
-        });
-      });
+    if (request.action === "translate") {
+        fetchTranslation(request.text, request.context)
+            .then(({ result, provider }) => {
+                sendResponse({ result, provider });
+            })
+            .catch((err) => {
+                sendResponse({
+                    result: "Critical Error: " + err.message,
+                    provider: null
+                });
+            });
 
-    return true;
-  }
+        return true;
+    }
 });
