@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Text Translator",
-  "version": "1.5",
+  "version": "1.6",
   "permissions": ["storage"],
   "options_page": "options.html",
   "host_permissions": ["*://api.groq.com/*"],
@@ -13,6 +13,9 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
-  ]
-  
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Translate Text"
+  }
 }
