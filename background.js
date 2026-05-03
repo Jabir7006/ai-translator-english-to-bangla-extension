@@ -13,18 +13,21 @@ Use words like: "বলে দিব", "দেখাবো", "সিজনাল
 Read the English, understand what it's trying to say, and say it how a normal Bangladeshi young person would say it in real life.
 Example 1:
 Target: "Can You Match These Dishes to the Jobs They Were Named After?"
-Bad: "এই খাবারগুলোকে তাদের নামের পেশার সাথে মেলাতে পারবেন?" (Too formal)
-Good: "কিছু খাবারের নাম বিভিন্ন পেশার মানুষের নামে রাখা হয়েছে, তুমি কি মেলাতে পারবে কোন খাবারটা কোন পেশার?"
+Output:
+<b>অর্থ:</b> কিছু খাবারের নাম বিভিন্ন পেশার মানুষের নামে রাখা হয়েছে, তুমি কি মেলাতে পারবে কোন খাবারটা কোন পেশার?
+<b>সহজ কথায়:</b> এখানে জানতে চাওয়া হয়েছে যে তুমি পেশা অনুযায়ী খাবারের নাম মেলাতে পারবে কিনা। 👍
 
 Example 2:
 Target: "Form Your Animal Squad and We'll Tell You Which Season You Were Meant for"
-Bad: "আপনার প্রাণী দল গঠন করুন এবং আমরা আপনাকে জানাব আপনি কোন মৌসুমের জন্য নির্ধারিত ছিলেন"
-Good: "তোমার পছন্দের অ্যানিমেল বা প্রাণীদের নিয়ে একটা স্কোয়াড বানাও, আর আমরা বলে দিব কোন সিজন বা ঋতু তোমার জন্য সবচেয়ে পারফেক্ট!"
+Output:
+<b>অর্থ:</b> তোমার পছন্দের অ্যানিমেল বা প্রাণীদের নিয়ে একটা স্কোয়াড বানাও, আর আমরা বলে দিব কোন সিজন বা ঋতু তোমার জন্য সবচেয়ে পারফেক্ট!
+<b>সহজ কথায়:</b> এখানে বলা হয়েছে যে পছন্দের প্রাণী সিলেক্ট করলে তোমার সিজন জানা যাবে। 👍
 
 Example 3: 
 Target: "Spend $20K on an International Trip and We'll Reveal Your Seasonal Aura"
-Bad: "একটা আন্তর্জাতিক ট্রিপে ২০ হাজার ডলার খরচ করুন এবং আমরা আপনার ঋতুভিত্তিক আউরা উন্মোচন করব"
-Good: "একটা ইন্টারন্যাশনাল ট্রিপে ২০ হাজার ডলার খরচ করো, আর আমরা বলে দিব তোমার সিজনাল আউরা বা ভাইব কেমন!"
+Output:
+<b>অর্থ:</b> একটা ইন্টারন্যাশনাল ট্রিপে ২০ হাজার ডলার খরচ করো, আর আমরা বলে দিব তোমার সিজনাল আউরা বা ভাইব কেমন!
+<b>সহজ কথায়:</b> এখানে বলা হয়েছে যে ইন্টারন্যাশনাল ট্যুরে টাকা খরচ করলে তোমার ভাইব বোঝা যাবে। 👍
 
 3. ENGLISH SLANG REMAINS ENGLISH
 Do not translate internet words. Keep them transliterated:
@@ -103,9 +106,17 @@ async function fetchWithGroq(userMessage, apiKey, model, options = { systemPromp
         content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
         if (options.isBanglaOutput) {
-            const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
-            if (match) {
-                content = match[1].trim();
+            const orthMatch = content.match(/(?:<b\s*>|\*\*|\*|)\s*অর্থ:\s*(?:<\/b>|\*\*|\*|)?\s*([\s\S]*?)(?=(?:<b\s*>|\*\*|\*|)\s*সহজ কথায়:|\n\* |\n\n|$)/i);
+            const shohojMatch = content.match(/(?:<b\s*>|\*\*|\*|)\s*সহজ কথায়:\s*(?:<\/b>|\*\*|\*|)?\s*([\s\S]*?)(?=(?:\n\* |\n\n|$))/i);
+            
+            if (orthMatch || shohojMatch) {
+                let newContent = "";
+                if (orthMatch) newContent += `<b>অর্থ:</b> ${orthMatch[1].trim().replace(/\n/g, ' ')}\n\n`;
+                if (shohojMatch) newContent += `<b>সহজ কথায়:</b> ${shohojMatch[1].trim().replace(/\n/g, ' ')}`;
+                content = newContent.trim();
+            } else {
+                const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
+                if (match) content = match[1].trim();
             }
         }
     }
@@ -119,31 +130,41 @@ async function fetchWithGemini(userMessage, apiKey, model, options = { systemPro
 
     const geminiModel = model || "gemini-2.5-flash-lite";
 
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-        {
-            method: "POST",
-            signal: controller.signal,
-            headers: {
-                "Content-Type": "application/json"
+    const requestOptions = {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            system_instruction: {
+                parts: [{ text: options.systemPrompt }]
             },
-            body: JSON.stringify({
-                system_instruction: {
-                    parts: [{ text: options.systemPrompt }]
-                },
-                contents: [
-                    {
-                        role: "user",
-                        parts: [{ text: userMessage }]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.2,
-                    maxOutputTokens: 800
+            contents: [
+                {
+                    role: "user",
+                    parts: [{ text: userMessage }]
                 }
-            })
-        }
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 800
+            }
+        })
+    };
+
+    let response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+        requestOptions
     );
+
+    // Fallback to v1alpha if the model is an experimental/preview model not in v1beta
+    if (response.status === 404) {
+        response = await fetch(
+            `https://generativelanguage.googleapis.com/v1alpha/models/${geminiModel}:generateContent?key=${apiKey}`,
+            requestOptions
+        );
+    }
 
     clearTimeout(timeoutId);
 
@@ -161,9 +182,17 @@ async function fetchWithGemini(userMessage, apiKey, model, options = { systemPro
         content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
         if (options.isBanglaOutput) {
-            const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
-            if (match) {
-                content = match[1].trim();
+            const orthMatch = content.match(/(?:<b\s*>|\*\*|\*|)\s*অর্থ:\s*(?:<\/b>|\*\*|\*|)?\s*([\s\S]*?)(?=(?:<b\s*>|\*\*|\*|)\s*সহজ কথায়:|\n\* |\n\n|$)/i);
+            const shohojMatch = content.match(/(?:<b\s*>|\*\*|\*|)\s*সহজ কথায়:\s*(?:<\/b>|\*\*|\*|)?\s*([\s\S]*?)(?=(?:\n\* |\n\n|$))/i);
+            
+            if (orthMatch || shohojMatch) {
+                let newContent = "";
+                if (orthMatch) newContent += `<b>অর্থ:</b> ${orthMatch[1].trim().replace(/\n/g, ' ')}\n\n`;
+                if (shohojMatch) newContent += `<b>সহজ কথায়:</b> ${shohojMatch[1].trim().replace(/\n/g, ' ')}`;
+                content = newContent.trim();
+            } else {
+                const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
+                if (match) content = match[1].trim();
             }
         }
     }
@@ -201,7 +230,11 @@ async function fetchTranslation(text, context, options = { systemPrompt: SYSTEM_
 ${cleanContext || "No additional context"}
 
 Target Text (translate ONLY this):
-${cleanText}`;
+${cleanText}
+
+CRITICAL INSTRUCTION: You must strictly follow the exact output format defined in the system prompt.
+Respond ONLY with the exact "<b>অর্থ:</b>" and "<b>সহজ কথায়:</b>" tags.
+Do NOT output a checklist. Do NOT output your thought process. Do NOT add any conversational filler.`;
 
         // Determine provider order: selected first, then fallback
         const providers = [];

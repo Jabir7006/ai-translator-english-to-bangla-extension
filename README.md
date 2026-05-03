@@ -11,7 +11,7 @@ A powerful and intuitive Chrome extension designed to translate English internet
   - The popup textarea auto-focuses upon opening for instant typing.
 - **Multi-Provider Support**: Choose between **Google Gemini** (Recommended, better Bangla) and **Groq** (Faster) as your translation engine.
 - **Smart Fallback Mechanism**: If your primary provider fails or hits a rate limit, the extension automatically falls back to the secondary provider to ensure you always get a translation.
-- **Customizable Models**: Select from a variety of state-of-the-art AI models via the settings page (e.g., Gemini 2.5 Flash, Llama 3.3 70B, Qwen3 32B).
+- **Customizable Models**: Select from a variety of state-of-the-art AI models via the settings page (e.g., Gemini 3.1 Pro, Gemini 2.5 Flash, Llama 3.3 70B, Qwen3 32B, Gemma 4 31B, Gemma 3 27B).
 
 ## Installation
 
