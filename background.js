@@ -44,9 +44,24 @@ DO NOT output your internal thinking. DO NOT write <think> tags. DO NOT say "Her
 
 <b>সহজ কথায়:</b> [One single line explaining the main point very simply. Example: "এখানে বলা হয়েছে যে..."] 👍`;
 
+const SYSTEM_PROMPT_BN_EN = `You are a helpful translator. Your task is to translate the user's Banglish (Bengali written in English alphabet) text into natural, correct English.
+
+IMPORTANT RULES:
+1. Output only the exact English translation.
+2. Do NOT output any additional text, explanation, or conversational fillers.
+3. Make the English sound natural and conversational.
+
+Example 1:
+User: kemon aso
+Output: How are you?
+
+Example 2:
+User: ajke ki korba?
+Output: What will you do today?`;
+
 // ─── Provider Functions ──────────────────────────────────────────────
 
-async function fetchWithGroq(userMessage, apiKey, model) {
+async function fetchWithGroq(userMessage, apiKey, model, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -64,7 +79,7 @@ async function fetchWithGroq(userMessage, apiKey, model) {
             body: JSON.stringify({
                 model: groqModel,
                 messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "system", content: options.systemPrompt },
                     { role: "user", content: userMessage }
                 ],
                 temperature: 0.2,
@@ -87,17 +102,18 @@ async function fetchWithGroq(userMessage, apiKey, model) {
     if (content) {
         content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
-        // If the model rambles before giving the final answer, extract only the final format
-        const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
-        if (match) {
-            content = match[1].trim();
+        if (options.isBanglaOutput) {
+            const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
+            if (match) {
+                content = match[1].trim();
+            }
         }
     }
 
     return content;
 }
 
-async function fetchWithGemini(userMessage, apiKey, model) {
+async function fetchWithGemini(userMessage, apiKey, model, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
@@ -113,7 +129,7 @@ async function fetchWithGemini(userMessage, apiKey, model) {
             },
             body: JSON.stringify({
                 system_instruction: {
-                    parts: [{ text: SYSTEM_PROMPT }]
+                    parts: [{ text: options.systemPrompt }]
                 },
                 contents: [
                     {
@@ -144,10 +160,11 @@ async function fetchWithGemini(userMessage, apiKey, model) {
     if (content) {
         content = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
 
-        // If the model rambles before giving the final answer, extract only the final format
-        const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
-        if (match) {
-            content = match[1].trim();
+        if (options.isBanglaOutput) {
+            const match = content.match(/(<b>অর্থ:<\/b>[\s\S]*)/i);
+            if (match) {
+                content = match[1].trim();
+            }
         }
     }
 
@@ -156,7 +173,7 @@ async function fetchWithGemini(userMessage, apiKey, model) {
 
 // ─── Main Translation Logic ─────────────────────────────────────────
 
-async function fetchTranslation(text, context) {
+async function fetchTranslation(text, context, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
     try {
         const storageData = await chrome.storage.local.get([
             "groqApiKey",
@@ -190,11 +207,11 @@ ${cleanText}`;
         const providers = [];
 
         if (provider === "gemini") {
-            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel) });
-            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
+            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
+            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
         } else {
-            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel) });
-            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel) });
+            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
+            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
         }
 
         console.log("[AI Translator] Provider order:", providers.map(p => p.name).join(" → "));
@@ -237,8 +254,12 @@ ${cleanText}`;
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "translate") {
-        fetchTranslation(request.text, request.context)
+    if (request.action === "translate" || request.action === "translate_bn_en") {
+        const options = request.action === "translate_bn_en" 
+            ? { systemPrompt: SYSTEM_PROMPT_BN_EN, isBanglaOutput: false }
+            : { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true };
+
+        fetchTranslation(request.text, request.context, options)
             .then(({ result, provider, model }) => {
                 sendResponse({ result, provider, model });
             })

@@ -72,10 +72,43 @@
         #result b {
             color: #f9e2af;
         }
+        .tabs {
+            display: flex;
+            background: #313244;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 12px;
+            border: 1px solid #45475a;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 6px 0;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #a6adc8;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            color: #cdd6f4;
+        }
+        .tab.active {
+            background: #cba6f7;
+            color: #11111b;
+        }
     </style>
 </head>
 <body>
     <h3>✨ AI Text Translator</h3>
+    
+    <div class="tabs">
+        <div class="tab active" data-mode="en-bn">EN ➡️ BN</div>
+        <div class="tab" data-mode="bn-en">Banglish ➡️ EN</div>
+    </div>
+
     <textarea id="inputText" placeholder="Paste or type text here..."></textarea>
     <button id="translateBtn">Translate</button>
     <div id="loader">🤖 অনুবাদ করছি...</div>

@@ -1,3 +1,22 @@
+let currentMode = "en-bn";
+
+document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        currentMode = tab.dataset.mode;
+        
+        const inputText = document.getElementById("inputText");
+        if (currentMode === "en-bn") {
+            inputText.placeholder = "Paste or type text here...";
+            document.getElementById("loader").textContent = "🤖 অনুবাদ করছি...";
+        } else {
+            inputText.placeholder = "Type Banglish here (e.g. kemon aso)...";
+            document.getElementById("loader").textContent = "🤖 Translating...";
+        }
+    });
+});
+
 document.getElementById("translateBtn").addEventListener("click", () => {
     const text = document.getElementById("inputText").value.trim();
     const resultDiv = document.getElementById("result");
@@ -10,12 +29,15 @@ document.getElementById("translateBtn").addEventListener("click", () => {
     resultDiv.innerHTML = "";
     loader.style.display = "block";
 
+    const action = currentMode === "en-bn" ? "translate" : "translate_bn_en";
+    const context = currentMode === "en-bn" ? "Direct user input via extension popup." : "Translate Banglish to English";
+
     // Send the message to your existing background.js
     chrome.runtime.sendMessage(
         {
-            action: "translate",
+            action: action,
             text: text,
-            context: "Direct user input via extension popup." // Provides default context
+            context: context
         },
         (response) => {
             loader.style.display = "none";
