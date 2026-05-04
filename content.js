@@ -208,10 +208,30 @@ if (!window.hasInjectedAI) {
             console.log("TEXT:", textToTranslate);
             console.log("CONTEXT:", contextToSend);
 
+            // We no longer prefetch on highlight to save API quota.
+            // It will be prefetched when the user hovers over the button instead.
+
             floatBtn.style.top = `${e.pageY + 10}px`;
             floatBtn.style.left = `${e.pageX + 10}px`;
             floatBtn.style.display = "block";
         }, 20);
+    });
+
+    let hasPrefetchedForCurrentText = false;
+
+    floatBtn.addEventListener("mouseenter", () => {
+        if (!textToTranslate || hasPrefetchedForCurrentText) return;
+        
+        hasPrefetchedForCurrentText = true;
+        // ✨ Speculative Prefetch on Hover!
+        // Gives the API a 150ms - 400ms head start before the user actually clicks.
+        try {
+            chrome.runtime.sendMessage({
+                action: "prefetch_translate",
+                text: textToTranslate,
+                context: contextToSend
+            });
+        } catch (e) {}
     });
 
     floatBtn.addEventListener("mousedown", (e) => {
@@ -219,6 +239,7 @@ if (!window.hasInjectedAI) {
         e.stopPropagation();
 
         floatBtn.style.display = "none";
+        hasPrefetchedForCurrentText = false; // Reset for the next translation
 
         if (!textToTranslate) return;
 

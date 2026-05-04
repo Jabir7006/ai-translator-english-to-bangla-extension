@@ -1,13 +1,15 @@
 {
   "manifest_version": 3,
   "name": "AI Text Translator",
-  "version": "2.0",
+  "version": "2.1",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "options_page": "options.html",
   "host_permissions": [
     "*://api.groq.com/*",
@@ -18,8 +20,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
     }
   ],
   "action": {

@@ -61,6 +61,13 @@ Output: How are you?
 Example 2:
 User: ajke ki korba?
 Output: What will you do today?`;
+// ─── Cache (Data Structure Algorithm for Speed) ──────────────────────
+const translationCache = new Map();
+const MAX_CACHE_SIZE = 100;
+
+function getCacheKey(text, context, options) {
+    return `${options?.isBanglaOutput}_${(context || "").trim()}_${(text || "").trim()}`;
+}
 
 // ─── Provider Functions ──────────────────────────────────────────────
 
@@ -202,31 +209,43 @@ async function fetchWithGemini(userMessage, apiKey, model, options = { systemPro
 
 // ─── Main Translation Logic ─────────────────────────────────────────
 
-async function fetchTranslation(text, context, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
-    try {
-        const storageData = await chrome.storage.local.get([
-            "groqApiKey",
-            "geminiApiKey",
-            "activeProvider",
-            "groqModel",
-            "geminiModel"
-        ]);
+function fetchTranslation(text, context, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
+    const cleanText = (text || "").trim();
+    const cleanContext = (context || "").trim();
+    
+    // 1. Check Cache first! (Now caches Promises for Request Coalescing/Prefetching)
+    const cacheKey = getCacheKey(cleanText, cleanContext, options);
+    if (translationCache.has(cacheKey)) {
+        console.log("[AI Translator] ⚡ Returning translation from Cache! (0ms)");
+        const cachedPromise = translationCache.get(cacheKey);
+        // Move to end to maintain LRU order
+        translationCache.delete(cacheKey);
+        translationCache.set(cacheKey, cachedPromise);
+        return cachedPromise;
+    }
 
-        const groqKey = storageData.groqApiKey;
-        const geminiKey = storageData.geminiApiKey;
-        const provider = storageData.activeProvider || "gemini";
-        const groqModel = storageData.groqModel || "llama-3.3-70b-versatile";
-        const geminiModel = storageData.geminiModel || "gemini-2.5-flash-lite";
+    const fetchPromise = (async () => {
+        try {
+            const storageData = await chrome.storage.local.get([
+                "groqApiKey",
+                "geminiApiKey",
+                "activeProvider",
+                "groqModel",
+                "geminiModel"
+            ]);
 
-        console.log("[AI Translator] === New Translation ===");
-        console.log("[AI Translator] Active provider:", provider);
-        console.log("[AI Translator] Gemini key exists:", !!geminiKey);
-        console.log("[AI Translator] Groq key exists:", !!groqKey);
+            const groqKey = storageData.groqApiKey;
+            const geminiKey = storageData.geminiApiKey;
+            const provider = storageData.activeProvider || "gemini";
+            const groqModel = storageData.groqModel || "llama-3.3-70b-versatile";
+            const geminiModel = storageData.geminiModel || "gemini-2.5-flash-lite";
 
-        const cleanText = (text || "").trim();
-        const cleanContext = (context || "").trim();
+            console.log("[AI Translator] === New Translation ===");
+            console.log("[AI Translator] Active provider:", provider);
+            console.log("[AI Translator] Gemini key exists:", !!geminiKey);
+            console.log("[AI Translator] Groq key exists:", !!groqKey);
 
-        const userMessage = `Context (for understanding only, do not translate):
+            const userMessage = `Context (for understanding only, do not translate):
 ${cleanContext || "No additional context"}
 
 Target Text (translate ONLY this):
@@ -236,57 +255,72 @@ CRITICAL INSTRUCTION: You must strictly follow the exact output format defined i
 Respond ONLY with the exact "<b>অর্থ:</b>" and "<b>সহজ কথায়:</b>" tags.
 Do NOT output a checklist. Do NOT output your thought process. Do NOT add any conversational filler.`;
 
-        // Determine provider order: selected first, then fallback
-        const providers = [];
+            // Determine provider order: selected first, then fallback
+            const providers = [];
 
-        if (provider === "gemini") {
-            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
-            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
-        } else {
-            if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
-            if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
-        }
-
-        console.log("[AI Translator] Provider order:", providers.map(p => p.name).join(" → "));
-
-        if (providers.length === 0) {
-            return { result: "Error: কোনো API Key সেট করা হয়নি। Extension options এ গিয়ে API key দিন।", provider: null, model: null };
-        }
-
-        // Try primary provider, fallback to secondary
-        for (let i = 0; i < providers.length; i++) {
-            try {
-                console.log(`[AI Translator] Trying ${providers[i].name}...`);
-                const result = await providers[i].fn();
-                if (result) {
-                    console.log(`[AI Translator] ✅ ${providers[i].name} succeeded`);
-                    return { result, provider: providers[i].name, model: providers[i].model };
-                }
-                console.log(`[AI Translator] ⚠️ ${providers[i].name} returned empty result`);
-            } catch (err) {
-                console.error(`[AI Translator] ❌ ${providers[i].name} failed:`, err.message);
-
-                // If this was the last provider, return the error
-                if (i === providers.length - 1) {
-                    return { result: `Error: ${err.message}`, provider: null };
-                }
-                console.log(`[AI Translator] Falling back to next provider...`);
-                // Otherwise continue to fallback
+            if (provider === "gemini") {
+                if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
+                if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
+            } else {
+                if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
+                if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
             }
+
+            console.log("[AI Translator] Provider order:", providers.map(p => p.name).join(" → "));
+
+            if (providers.length === 0) {
+                return { result: "Error: কোনো API Key সেট করা হয়নি। Extension options এ গিয়ে API key দিন।", provider: null, model: null };
+            }
+
+            // Try primary provider, fallback to secondary
+            for (let i = 0; i < providers.length; i++) {
+                try {
+                    console.log(`[AI Translator] Trying ${providers[i].name}...`);
+                    const result = await providers[i].fn();
+                    if (result) {
+                        console.log(`[AI Translator] ✅ ${providers[i].name} succeeded`);
+                        return { result, provider: providers[i].name, model: providers[i].model };
+                    }
+                    console.log(`[AI Translator] ⚠️ ${providers[i].name} returned empty result`);
+                } catch (err) {
+                    console.error(`[AI Translator] ❌ ${providers[i].name} failed:`, err.message);
+
+                    // If this was the last provider, return the error
+                    if (i === providers.length - 1) {
+                        return { result: `Error: ${err.message}`, provider: null };
+                    }
+                    console.log(`[AI Translator] Falling back to next provider...`);
+                }
+            }
+
+            return { result: "Error: রেসপন্স ফাঁকা এসেছে।", provider: null, model: null };
+
+        } catch (error) {
+            if (error.name === "AbortError") {
+                return { result: "Error: API Timeout!", provider: null, model: null };
+            }
+
+            return { result: "Internal Error: " + error.message, provider: null, model: null };
         }
+    })();
 
-        return { result: "Error: রেসপন্স ফাঁকা এসেছে।", provider: null, model: null };
-
-    } catch (error) {
-        if (error.name === "AbortError") {
-            return { result: "Error: API Timeout!", provider: null, model: null };
-        }
-
-        return { result: "Internal Error: " + error.message, provider: null, model: null };
+    // Cache the promise immediately so subsequent identical requests hook into it!
+    translationCache.set(cacheKey, fetchPromise);
+    if (translationCache.size > MAX_CACHE_SIZE) {
+        const firstKey = translationCache.keys().next().value;
+        translationCache.delete(firstKey);
     }
-}
 
+    return fetchPromise;
+}
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "prefetch_translate") {
+        const options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true };
+        fetchTranslation(request.text, request.context, options).catch(err => console.error("[AI Translator] Prefetch failed:", err));
+        sendResponse({ status: "prefetching" });
+        return true;
+    }
+
     if (request.action === "translate" || request.action === "translate_bn_en") {
         const options = request.action === "translate_bn_en" 
             ? { systemPrompt: SYSTEM_PROMPT_BN_EN, isBanglaOutput: false }
