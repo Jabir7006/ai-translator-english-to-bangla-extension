@@ -71,9 +71,9 @@ function getCacheKey(text, context, options) {
 
 // ─── Provider Functions ──────────────────────────────────────────────
 
-async function fetchWithGroq(userMessage, apiKey, model, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
+async function fetchWithGroq(userMessage, apiKey, model, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }, timeoutMs = 10000) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(new Error("Timeout")), timeoutMs);
 
     const groqModel = model || "llama-3.3-70b-versatile";
 
@@ -131,9 +131,9 @@ async function fetchWithGroq(userMessage, apiKey, model, options = { systemPromp
     return content;
 }
 
-async function fetchWithGemini(userMessage, apiKey, model, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }) {
+async function fetchWithGemini(userMessage, apiKey, model, options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true }, timeoutMs = 10000) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const timeoutId = setTimeout(() => controller.abort(new Error("Timeout")), timeoutMs);
 
     const geminiModel = model || "gemini-2.5-flash-lite";
 
@@ -234,8 +234,8 @@ function fetchTranslation(text, context, options = { systemPrompt: SYSTEM_PROMPT
                 "geminiModel"
             ]);
 
-            const groqKey = storageData.groqApiKey;
-            const geminiKey = storageData.geminiApiKey;
+            const groqKey = (storageData.groqApiKey || "").trim();
+            const geminiKey = (storageData.geminiApiKey || "").trim();
             const provider = storageData.activeProvider || "gemini";
             const groqModel = storageData.groqModel || "llama-3.3-70b-versatile";
             const geminiModel = storageData.geminiModel || "gemini-2.5-flash-lite";
@@ -259,11 +259,11 @@ Do NOT output a checklist. Do NOT output your thought process. Do NOT add any co
             const providers = [];
 
             if (provider === "gemini") {
-                if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
-                if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
+                if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: (timeout) => fetchWithGemini(userMessage, geminiKey, geminiModel, options, timeout) });
+                if (groqKey) providers.push({ name: "groq", model: groqModel, fn: (timeout) => fetchWithGroq(userMessage, groqKey, groqModel, options, timeout) });
             } else {
-                if (groqKey) providers.push({ name: "groq", model: groqModel, fn: () => fetchWithGroq(userMessage, groqKey, groqModel, options) });
-                if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: () => fetchWithGemini(userMessage, geminiKey, geminiModel, options) });
+                if (groqKey) providers.push({ name: "groq", model: groqModel, fn: (timeout) => fetchWithGroq(userMessage, groqKey, groqModel, options, timeout) });
+                if (geminiKey) providers.push({ name: "gemini", model: geminiModel, fn: (timeout) => fetchWithGemini(userMessage, geminiKey, geminiModel, options, timeout) });
             }
 
             console.log("[AI Translator] Provider order:", providers.map(p => p.name).join(" → "));
@@ -272,32 +272,106 @@ Do NOT output a checklist. Do NOT output your thought process. Do NOT add any co
                 return { result: "Error: কোনো API Key সেট করা হয়নি। Extension options এ গিয়ে API key দিন।", provider: null, model: null };
             }
 
-            // Try primary provider, fallback to secondary
-            for (let i = 0; i < providers.length; i++) {
-                try {
-                    console.log(`[AI Translator] Trying ${providers[i].name}...`);
-                    const result = await providers[i].fn();
-                    if (result) {
-                        console.log(`[AI Translator] ✅ ${providers[i].name} succeeded`);
-                        return { result, provider: providers[i].name, model: providers[i].model };
-                    }
-                    console.log(`[AI Translator] ⚠️ ${providers[i].name} returned empty result`);
-                } catch (err) {
-                    console.error(`[AI Translator] ❌ ${providers[i].name} failed:`, err.message);
+            const TOTAL_TIMEOUT_MS = 10000; // 10 seconds total budget
+            const HEAD_START_MS = 3000;     // 3 seconds head start for primary
 
-                    // If this was the last provider, return the error
-                    if (i === providers.length - 1) {
-                        return { result: `Error: ${err.message}`, provider: null };
+            const runProvider = async (p, timeout) => {
+                const res = await p.fn(timeout);
+                if (!res) throw new Error("Empty response");
+                return { result: res, provider: p.name, model: p.model };
+            };
+
+            if (providers.length === 1) {
+                try {
+                    console.log(`[AI Translator] Trying ${providers[0].name} with timeout ${TOTAL_TIMEOUT_MS}ms...`);
+                    const res = await runProvider(providers[0], TOTAL_TIMEOUT_MS);
+                    console.log(`[AI Translator] ✅ ${providers[0].name} succeeded`);
+                    return res;
+                } catch (err) {
+                    console.warn(`[AI Translator] ⚠️ ${providers[0].name} failed:`, err.name, err.message);
+                    if (err.name === "AbortError" || err.message.includes("Timeout")) {
+                        return { result: "Error: ১০ সেকেন্ডের মধ্যে কোনো মডেল থেকে রেসপন্স পাওয়া যায়নি (Timeout)।", provider: null, model: null };
                     }
-                    console.log(`[AI Translator] Falling back to next provider...`);
+                    return { result: `Error: ${err.message}`, provider: null, model: null };
                 }
             }
 
-            return { result: "Error: রেসপন্স ফাঁকা এসেছে।", provider: null, model: null };
+            // We have 2 providers.
+            return new Promise((resolve) => {
+                let resolved = false;
+                let p1Finished = false, p1Result = null, p1Error = null;
+                let p2Started = false, p2Finished = false, p2Result = null, p2Error = null;
+
+                const checkState = () => {
+                    if (resolved) return;
+
+                    // 1. If P1 succeeded, return P1 immediately
+                    if (p1Finished && !p1Error) {
+                        resolved = true;
+                        resolve(p1Result);
+                        return;
+                    }
+
+                    // 2. If P1 failed, and P2 succeeded, return P2 immediately
+                    if (p1Finished && !!p1Error && p2Finished && !p2Error) {
+                        resolved = true;
+                        resolve(p2Result);
+                        return;
+                    }
+
+                    // 3. If both failed
+                    if (p1Finished && !!p1Error && p2Finished && !!p2Error) {
+                        resolved = true;
+                        const getErrMsg = (err) => err.name === "AbortError" || (err.message && err.message.includes("Timeout")) ? "Timeout" : err.message;
+                        const errorMsg = `${providers[0].name} failed: ${getErrMsg(p1Error)} | ${providers[1].name} failed: ${getErrMsg(p2Error)}`;
+                        resolve({ result: `Error: ${errorMsg}`, provider: null, model: null });
+                        return;
+                    }
+                };
+
+                const startP2 = () => {
+                    if (p2Started || resolved) return;
+                    p2Started = true;
+                    const remainingTime = TOTAL_TIMEOUT_MS - (Date.now() - startTime);
+                    if (remainingTime <= 0) return; // No time left for P2
+
+                    console.log(`[AI Translator] Starting fallback ${providers[1].name} with timeout ${remainingTime}ms...`);
+                    runProvider(providers[1], remainingTime)
+                        .then(res => { p2Finished = true; p2Result = res; checkState(); })
+                        .catch(err => { p2Finished = true; p2Error = err; checkState(); });
+                };
+
+                const startTime = Date.now();
+                console.log(`[AI Translator] Starting primary ${providers[0].name} with timeout ${TOTAL_TIMEOUT_MS}ms...`);
+
+                // Start P1
+                runProvider(providers[0], TOTAL_TIMEOUT_MS)
+                    .then(res => { p1Finished = true; p1Result = res; checkState(); })
+                    .catch(err => { 
+                        p1Finished = true; p1Error = err; 
+                        console.warn(`[AI Translator] ⚠️ ${providers[0].name} failed:`, err.message);
+                        startP2(); // Start P2 immediately if P1 fails
+                        checkState(); 
+                    });
+
+                // Start P2 after head start if P1 hasn't finished
+                setTimeout(() => {
+                    if (!p1Finished) startP2();
+                }, HEAD_START_MS);
+
+                // DEADLINE: at 9.5s, if P1 is still not done but P2 successfully finished, return P2 to meet 10s deadline
+                setTimeout(() => {
+                    if (!resolved && !p1Finished && p2Finished && !p2Error) {
+                        console.log(`[AI Translator] ⚠️ Primary provider took >9.5s. Using fallback response.`);
+                        resolved = true;
+                        resolve(p2Result);
+                    }
+                }, 9500);
+            });
 
         } catch (error) {
             if (error.name === "AbortError") {
-                return { result: "Error: API Timeout!", provider: null, model: null };
+                return { result: "Error: ১০ সেকেন্ডের মধ্যে কোনো মডেল থেকে রেসপন্স পাওয়া যায়নি (Timeout)।", provider: null, model: null };
             }
 
             return { result: "Internal Error: " + error.message, provider: null, model: null };
