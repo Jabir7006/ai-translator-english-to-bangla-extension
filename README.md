@@ -5,9 +5,10 @@ A powerful and intuitive Chrome extension designed to translate English internet
 ## Features
 
 - **Context-Aware In-Page Translation**: Simply select any text on a web page, click the floating magic icon (✨), and get a natural Bangla translation in a sleek, non-intrusive toast notification. The extension intelligently grabs surrounding context to ensure accurate meaning.
-- **Dual-Mode Popup Interface**:
+- **Multi-Mode Popup Interface**:
   - **EN ➡️ BN**: Quickly translate pasted or typed English text into conversational Bangla.
   - **Banglish ➡️ EN**: Translate Banglish (Bangla typed in Latin characters, e.g., "ami bhalo achi") into proper English.
+  - **Grammar Check**: Correct English grammatical errors with short, easy-to-understand explanations in Bengali.
   - The popup textarea auto-focuses upon opening for instant typing.
 - **Multi-Provider Support**: Choose between **Google Gemini** (Recommended, better Bangla) and **Groq** (Faster) as your translation engine.
 - **Smart Fallback Mechanism**: If your primary provider fails or hits a rate limit, the extension automatically falls back to the secondary provider to ensure you always get a translation.
@@ -35,7 +36,7 @@ To use the extension, you'll need to provide an API key for either Google Gemini
 ## Usage
 
 - **On a Web Page**: Highlight any English text. A floating ✨ icon will appear near your cursor. Click it to view the translation at the bottom right of your screen.
-- **From the Popup**: Click the extension icon in your toolbar, select your desired tab (EN ➡️ BN or Banglish ➡️ EN), type or paste your text, and click **Translate**.
+- **From the Popup**: Click the extension icon in your toolbar, select your desired tab (EN ➡️ BN, Banglish ➡️ EN, or Grammar), type or paste your text, and click **Translate**.
 
 ## Tech Stack
 
