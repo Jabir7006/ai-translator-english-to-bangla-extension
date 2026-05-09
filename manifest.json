@@ -8,7 +8,8 @@
     "128": "icon128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "tts"
   ],
   "options_page": "options.html",
   "host_permissions": [

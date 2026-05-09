@@ -37,15 +37,35 @@ document.getElementById("translateBtn").addEventListener("click", () => {
     if (!text) return;
 
     if (currentMode === "pronounce") {
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "en-US";
-        utterance.rate = 0.95; // Slightly slower for clearer pronunciation
-        window.speechSynthesis.speak(utterance);
+        const safeText = text.substring(0, 200);
         
-        // Show temporary UI response
-        resultDiv.style.display = "block";
-        resultDiv.innerHTML = "🔊 <b>Pronouncing:</b> Listen closely...";
+        const playFallbackTTS = () => {
+            const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=${encodeURIComponent(safeText)}`;
+            const audio = new Audio(url);
+            audio.play().catch(err => console.error("Audio playback failed:", err));
+            resultDiv.style.display = "block";
+            resultDiv.innerHTML = "🔊 <b>Pronouncing:</b> Listen closely... (Online Engine)";
+        };
+
+        if (chrome.tts) {
+            chrome.tts.getVoices((voices) => {
+                if (voices && voices.length > 0) {
+                    // Native engine is available (e.g. Chrome)
+                    chrome.tts.stop();
+                    chrome.tts.speak(text, {
+                        lang: 'en-US',
+                        rate: 0.95
+                    });
+                    resultDiv.style.display = "block";
+                    resultDiv.innerHTML = "🔊 <b>Pronouncing:</b> Listen closely... (Native Engine)";
+                } else {
+                    // No native voices available (e.g. Brave/Helium)
+                    playFallbackTTS();
+                }
+            });
+        } else {
+            playFallbackTTS();
+        }
         return;
     }
 
