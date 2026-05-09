@@ -226,6 +226,7 @@ if (!window.hasInjectedAI) {
         // ✨ Speculative Prefetch on Hover!
         // Gives the API a 150ms - 400ms head start before the user actually clicks.
         try {
+            if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) return;
             chrome.runtime.sendMessage({
                 action: "prefetch_translate",
                 text: textToTranslate,
@@ -247,39 +248,57 @@ if (!window.hasInjectedAI) {
             "🤖 অর্থ বুঝে স্বাভাবিক বাংলায় অনুবাদ করছি...";
         toast.style.display = "block";
 
-        chrome.runtime.sendMessage(
-            {
-                action: "translate",
-                text: textToTranslate,
-                context: contextToSend
-            },
-            (response) => {
-                if (chrome.runtime.lastError) {
-                    toastContent.innerHTML =
-                        "Internal Error: " +
-                        chrome.runtime.lastError.message;
-                    return;
-                }
-
-                if (response?.result) {
-                    let html = response.result.replace(
-                        /\n/g,
-                        "<br>"
-                    );
-
-                    if (response.provider) {
-                        const icon = response.provider === "gemini" ? "✦" : "⚡";
-                        const label = response.provider === "gemini" ? "Gemini" : "Groq";
-                        const modelText = response.model ? ` • ${response.model}` : "";
-                        html += `<br><span class="provider-tag ${response.provider}">${icon} ${label}${modelText}</span>`;
+        try {
+            if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+                throw new Error("Extension context invalidated");
+            }
+            
+            chrome.runtime.sendMessage(
+                {
+                    action: "translate",
+                    text: textToTranslate,
+                    context: contextToSend
+                },
+                (response) => {
+                    if (chrome.runtime.lastError) {
+                        toastContent.innerHTML =
+                            "Internal Error: " +
+                            chrome.runtime.lastError.message;
+                        return;
                     }
 
-                    toastContent.innerHTML = html;
-                } else {
-                    toastContent.innerHTML =
-                        "সার্ভার থেকে কোনো রেজাল্ট আসেনি।";
+                    if (response?.result) {
+                        let html = response.result.replace(
+                            /\n/g,
+                            "<br>"
+                        );
+
+                        if (response.provider) {
+                            const icon = response.provider === "gemini" ? "✦" : "⚡";
+                            const label = response.provider === "gemini" ? "Gemini" : "Groq";
+                            const modelText = response.model ? ` • ${response.model}` : "";
+                            html += `<br><span class="provider-tag ${response.provider}">${icon} ${label}${modelText}</span>`;
+                        }
+                        
+                        if (response.fallbackReason) {
+                            html += `<div style="font-size: 11px; color: #f38ba8; margin-top: 8px; border-top: 1px solid #313244; padding-top: 6px;">⚠️ Fallback triggered: ${response.fallbackReason}</div>`;
+                        }
+
+                        toastContent.innerHTML = html;
+                    } else {
+                        toastContent.innerHTML =
+                            "সার্ভার থেকে কোনো রেজাল্ট আসেনি।";
+                    }
                 }
+            );
+        } catch (e) {
+            console.error("SendMessage error:", e);
+            const errMsg = e.message || "";
+            if (errMsg.includes("Extension context invalidated") || errMsg.includes("Cannot read properties of undefined")) {
+                toastContent.innerHTML = "এক্সটেনশন আপডেট হয়েছে। দয়া করে <b>পেজটি রিলোড</b> করুন। (Please refresh the page)";
+            } else {
+                toastContent.innerHTML = "Error: " + errMsg;
             }
-        );
+        }
     });
 }

@@ -315,6 +315,8 @@ Do NOT output a checklist. Do NOT output your thought process. Do NOT add any co
                     // 2. If P1 failed, and P2 succeeded, return P2 immediately
                     if (p1Finished && !!p1Error && p2Finished && !p2Error) {
                         resolved = true;
+                        const getErrMsg = (err) => err.name === "AbortError" || (err.message && err.message.includes("Timeout")) ? "Timeout" : err.message;
+                        p2Result.fallbackReason = `${providers[0].name} failed - ${getErrMsg(p1Error)}`;
                         resolve(p2Result);
                         return;
                     }
@@ -364,6 +366,7 @@ Do NOT output a checklist. Do NOT output your thought process. Do NOT add any co
                     if (!resolved && !p1Finished && p2Finished && !p2Error) {
                         console.log(`[AI Translator] ⚠️ Primary provider took >9.5s. Using fallback response.`);
                         resolved = true;
+                        p2Result.fallbackReason = `${providers[0].name} took too long (>9.5s)`;
                         resolve(p2Result);
                     }
                 }, 9500);
