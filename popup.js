@@ -10,9 +10,12 @@ document.querySelectorAll(".tab").forEach(tab => {
         if (currentMode === "en-bn") {
             inputText.placeholder = "Paste or type text here...";
             document.getElementById("loader").textContent = "🤖 অনুবাদ করছি...";
-        } else {
+        } else if (currentMode === "bn-en") {
             inputText.placeholder = "Type Banglish here (e.g. kemon aso)...";
             document.getElementById("loader").textContent = "🤖 Translating...";
+        } else if (currentMode === "grammar") {
+            inputText.placeholder = "Type English text to check grammar...";
+            document.getElementById("loader").textContent = "🤖 Checking Grammar...";
         }
     });
 });
@@ -29,8 +32,16 @@ document.getElementById("translateBtn").addEventListener("click", () => {
     resultDiv.innerHTML = "";
     loader.style.display = "block";
 
-    const action = currentMode === "en-bn" ? "translate" : "translate_bn_en";
-    const context = currentMode === "en-bn" ? "Direct user input via extension popup." : "Translate Banglish to English";
+    let action = "translate";
+    let context = "Direct user input via extension popup.";
+    
+    if (currentMode === "bn-en") {
+        action = "translate_bn_en";
+        context = "Translate Banglish to English";
+    } else if (currentMode === "grammar") {
+        action = "grammar_check";
+        context = "Check English grammar and explain in Bengali";
+    }
 
     // Send the message to your existing background.js
     chrome.runtime.sendMessage(

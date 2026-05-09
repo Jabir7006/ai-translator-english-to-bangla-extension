@@ -61,6 +61,15 @@ Output: How are you?
 Example 2:
 User: ajke ki korba?
 Output: What will you do today?`;
+
+const SYSTEM_PROMPT_GRAMMAR_CHECK = `You are a helpful English grammar expert. The user will give you an English text.
+Your task is to correct any grammatical errors in the text.
+Provide the output EXACTLY in this format:
+
+<b>Corrected Text:</b> [The grammatically correct English text]
+
+<b>Explanation:</b> [A short explanation IN BENGALI (Bangla) explaining where the mistake was, why it was wrong, and why the correction is correct. Keep the explanation very casual and easy to understand. If the original text was already correct, just mention that it was correct.]`;
+
 // ─── Cache (Data Structure Algorithm for Speed) ──────────────────────
 const translationCache = new Map();
 const MAX_CACHE_SIZE = 100;
@@ -398,10 +407,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
-    if (request.action === "translate" || request.action === "translate_bn_en") {
-        const options = request.action === "translate_bn_en" 
-            ? { systemPrompt: SYSTEM_PROMPT_BN_EN, isBanglaOutput: false }
-            : { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true };
+    if (request.action === "translate" || request.action === "translate_bn_en" || request.action === "grammar_check") {
+        let options;
+        if (request.action === "translate_bn_en") {
+            options = { systemPrompt: SYSTEM_PROMPT_BN_EN, isBanglaOutput: false };
+        } else if (request.action === "grammar_check") {
+            options = { systemPrompt: SYSTEM_PROMPT_GRAMMAR_CHECK, isBanglaOutput: false };
+        } else {
+            options = { systemPrompt: SYSTEM_PROMPT, isBanglaOutput: true };
+        }
 
         fetchTranslation(request.text, request.context, options)
             .then(({ result, provider, model }) => {
