@@ -7,15 +7,24 @@ document.querySelectorAll(".tab").forEach(tab => {
         currentMode = tab.dataset.mode;
         
         const inputText = document.getElementById("inputText");
+        const translateBtn = document.getElementById("translateBtn");
+        
         if (currentMode === "en-bn") {
             inputText.placeholder = "Paste or type text here...";
             document.getElementById("loader").textContent = "🤖 অনুবাদ করছি...";
+            translateBtn.textContent = "Translate";
         } else if (currentMode === "bn-en") {
             inputText.placeholder = "Type Banglish here (e.g. kemon aso)...";
             document.getElementById("loader").textContent = "🤖 Translating...";
+            translateBtn.textContent = "Translate";
         } else if (currentMode === "grammar") {
             inputText.placeholder = "Type English text to check grammar...";
             document.getElementById("loader").textContent = "🤖 Checking Grammar...";
+            translateBtn.textContent = "Check Grammar";
+        } else if (currentMode === "pronounce") {
+            inputText.placeholder = "Type English word or sentence to hear pronunciation...";
+            document.getElementById("loader").textContent = "🔊 Speaking...";
+            translateBtn.textContent = "Listen";
         }
     });
 });
@@ -26,6 +35,19 @@ document.getElementById("translateBtn").addEventListener("click", () => {
     const loader = document.getElementById("loader");
 
     if (!text) return;
+
+    if (currentMode === "pronounce") {
+        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        utterance.rate = 0.95; // Slightly slower for clearer pronunciation
+        window.speechSynthesis.speak(utterance);
+        
+        // Show temporary UI response
+        resultDiv.style.display = "block";
+        resultDiv.innerHTML = "🔊 <b>Pronouncing:</b> Listen closely...";
+        return;
+    }
 
     // Reset UI state
     resultDiv.style.display = "none";
